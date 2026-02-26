@@ -1,0 +1,20 @@
+# Global env files
+.env
+.env.*
+server/.env
+
+# Server dependencies
+server/node_modules/
+
+# Python (if Flask)
+__pycache__/
+*.pyc
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+
+# Ignore entire static folder
+server/static/
