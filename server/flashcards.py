@@ -56,11 +56,11 @@ Lecture Notes:
 
         raw_output = response.content.strip()
 
-        # 🔥 Remove markdown code blocks if present
+        # Remove markdown code blocks if present
         raw_output = re.sub(r"```json", "", raw_output)
         raw_output = re.sub(r"```", "", raw_output).strip()
 
-        # 🔥 Extract JSON array safely
+        # Extract JSON array safely
         match = re.search(r"\[.*\]", raw_output, re.DOTALL)
 
         if match:

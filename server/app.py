@@ -7,6 +7,8 @@ from quiz import quiz_bp
 from face_attendance import face_bp
 from rag import rag_bp
 from lecture import lecture_bp
+from drawing_solver import drawing_solver_bp
+
 
 app = Flask(__name__)
 CORS(app)
@@ -18,6 +20,7 @@ app.register_blueprint(quiz_bp)
 app.register_blueprint(face_bp)
 app.register_blueprint(rag_bp)
 app.register_blueprint(lecture_bp)
+app.register_blueprint(drawing_solver_bp)
 
 @app.route("/")
 def home():
