@@ -51,6 +51,12 @@ const features = [
     desc: 'Upload lecture audio. Get transcripts, summaries, key points, and interactive Q&A — instantly.',
     tag: 'Audio AI',
   },
+  {
+    icon: Mic,
+    title: 'Drawing Solver',
+    desc: 'Snap a pic of your handwritten problem. Get step-by-step solutions with audio explanations.',
+    tag: 'Audio AI',
+  },
 ];
 
 const steps = [

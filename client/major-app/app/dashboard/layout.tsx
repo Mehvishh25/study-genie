@@ -18,6 +18,7 @@ const navItems = [
     { label: 'Face Attendance', icon: Camera, href: '/dashboard/face-attendance', desc: 'Facial recognition' },
     { label: 'RAG System', icon: BookOpen, href: '/dashboard/rag', desc: 'Chat with PDFs' },
     { label: 'Lecture Intelligence', icon: Mic, href: '/dashboard/lecture-intelligence', desc: 'Audio summaries' },
+    { label: 'Drawing Solver', icon: Mic, href: '/dashboard/drawing-solver', desc: 'Solve handwritten problems' },
 ];
 
 const bottomItems = [

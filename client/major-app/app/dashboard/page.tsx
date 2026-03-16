@@ -14,6 +14,7 @@ const tools = [
     { label: 'Face Attendance', icon: Camera, href: '/dashboard/face-attendance', desc: 'Facial recognition attendance system', count: '320 sessions' },
     { label: 'RAG System', icon: BookOpen, href: '/dashboard/rag', desc: 'Chat with your uploaded PDFs', count: '540 docs' },
     { label: 'Lecture Intelligence', icon: Mic, href: '/dashboard/lecture-intelligence', desc: 'Summarize & analyze lectures', count: '180 lectures' },
+    { label: 'Drawing Solver', icon: Mic, href: '/dashboard/drawing-solver', desc: 'Solve handwritten problems with step-by-step solutions and audio explanations', count: '75 problems solved' },
 ];
 
 import { useState, useEffect } from 'react';
