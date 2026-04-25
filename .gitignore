@@ -18,3 +18,11 @@ __pycache__/
 
 # Ignore entire static folder
 server/static/
+
+Attendance/
+
+static/
+
+uploads/
+
+vecorstore/

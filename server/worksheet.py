@@ -1,20 +1,19 @@
 from flask import Blueprint, request, jsonify
 from dotenv import load_dotenv
-
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_core.messages import HumanMessage, SystemMessage
+import time
+import os
+import google.generativeai as genai
 
 # Load ENV
 load_dotenv()
 
-# Gemini Model
-llm = ChatGoogleGenerativeAI(
-    model="gemini-2.5-flash",
-    temperature=0.3
-)
+# Configure Gemini
+genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+
+# Initialize model
+model = genai.GenerativeModel("gemini-2.5-flash")
 
 worksheet_bp = Blueprint("worksheet", __name__)
-
 
 # -----------------------------
 # Worksheet Logic
@@ -28,7 +27,6 @@ def generate_worksheet(
     topic,
     text_input=""
 ):
-
     reference_section = ""
     if text_input:
         reference_section = f"\nReference Text:\n{text_input}\n"
@@ -56,12 +54,17 @@ Instructions:
 Return worksheet in clean numbered format.
 """
 
-    response = llm.invoke([
-        SystemMessage(content="You generate high quality academic worksheets."),
-        HumanMessage(content=prompt)
-    ])
+    try:
+        response = model.generate_content(prompt)
 
-    return response.content
+        # 🔥 Important for free tier
+        time.sleep(10)
+
+        return response.text
+
+    except Exception as e:
+        print("ERROR:", str(e))
+        return "⚠️ Rate limit hit. Please wait 30–60 seconds and try again."
 
 
 # -----------------------------
@@ -69,17 +72,21 @@ Return worksheet in clean numbered format.
 # -----------------------------
 @worksheet_bp.route("/worksheet/generate", methods=["POST"])
 def worksheet_api():
+    try:
+        data = request.json
 
-    data = request.json
+        worksheet = generate_worksheet(
+            data.get("grade"),
+            data.get("subject"),
+            data.get("difficulty"),
+            data.get("num_questions"),
+            data.get("question_types"),
+            data.get("topic"),
+            data.get("text_input", "")
+        )
 
-    worksheet = generate_worksheet(
-        data.get("grade"),
-        data.get("subject"),
-        data.get("difficulty"),
-        data.get("num_questions"),
-        data.get("question_types"),
-        data.get("topic"),
-        data.get("text_input", "")
-    )
+        return jsonify({"output": worksheet})
 
-    return jsonify({"output": worksheet})
+    except Exception as e:
+        print("SERVER ERROR:", str(e))
+        return jsonify({"output": "Server error"}), 500

@@ -8,20 +8,19 @@ from flask import Blueprint, request, jsonify
 from PIL import Image
 from gtts import gTTS
 
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_core.messages import HumanMessage
+import google.generativeai as genai
+from dotenv import load_dotenv
+
+# ------------------------------
+# INIT
+# ------------------------------
+load_dotenv()
+
+genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+
+model = genai.GenerativeModel("gemini-2.5-flash")
 
 drawing_solver_bp = Blueprint("drawing_solver", __name__)
-
-# ------------------------------
-# LLM INIT
-# ------------------------------
-llm = ChatGoogleGenerativeAI(
-    model="gemini-2.5-flash",
-    temperature=0,
-    max_retries=3,
-    timeout=60
-)
 
 # ------------------------------
 # PROMPT
@@ -29,17 +28,15 @@ llm = ChatGoogleGenerativeAI(
 PROMPT_TEMPLATE = """
 You are an AI tutor that understands handwritten drawings.
 
-Analyze the uploaded image carefully.
+Analyze the image:
 
-Tasks:
-1. If the image contains a math problem → solve step by step.
-2. If it contains a diagram → explain it clearly.
-3. If it contains a graph → describe what it represents.
-4. If it contains a handwritten question → answer it.
+1. If math problem → solve step-by-step
+2. If diagram → explain clearly
+3. If graph → interpret meaning
+4. If question → answer it
 
-Return the answer in plain text only.
-Do NOT use markdown symbols like *, **, #, bullet points, or formatting.
-Explain clearly step by step.
+Return plain text only.
+No markdown, no symbols, no formatting.
 """
 
 # ------------------------------
@@ -56,53 +53,59 @@ def solve_drawing():
         user_text = request.form.get("text", "")
 
         # ------------------------------
-        # Load Image
+        # Load image
         # ------------------------------
         image = Image.open(io.BytesIO(file.read())).convert("RGB")
 
-        # Resize large images
         if image.width > 800:
             ratio = 800 / image.width
             image = image.resize((800, int(image.height * ratio)))
 
         # ------------------------------
-        # Convert Image → Base64
+        # Convert to base64
         # ------------------------------
         buffer = io.BytesIO()
         image.save(buffer, format="PNG")
+
         img_base64 = base64.b64encode(buffer.getvalue()).decode()
 
         # ------------------------------
-        # LLM MESSAGE
+        # Build prompt
         # ------------------------------
-        message = HumanMessage(
-            content=[
-                {
-                    "type": "text",
-                    "text": PROMPT_TEMPLATE + f"\nUser Prompt: {user_text}"
-                },
-                {
-                    "type": "image_url",
-                    "image_url": f"data:image/png;base64,{img_base64}"
-                }
-            ]
-        )
+        full_prompt = PROMPT_TEMPLATE + f"\nUser Text: {user_text}"
 
         # ------------------------------
-        # CALL LLM
+        # Gemini request (DIRECT)
         # ------------------------------
-        response = llm.invoke([message])
-        answer = response.content
+        response = model.generate_content([
+            {
+                "role": "user",
+                "parts": [
+                    full_prompt,
+                    {
+                        "inline_data": {
+                            "mime_type": "image/png",
+                            "data": img_base64
+                        }
+                    }
+                ]
+            }
+        ])
+
+        if not response or not getattr(response, "text", None):
+            return jsonify({"result": "Empty response from model"}), 500
+
+        answer = response.text
 
         # ------------------------------
-        # CLEAN MARKDOWN SYMBOLS
+        # Clean output
         # ------------------------------
         clean_answer = re.sub(r"[*#_`>-]", "", answer)
         clean_answer = re.sub(r"\n+", "\n", clean_answer).strip()
-        clean_answer = clean_answer.replace(":", ".")  # better pauses for speech
+        clean_answer = clean_answer.replace(":", ".")
 
         # ------------------------------
-        # GENERATE AUDIO
+        # TTS AUDIO
         # ------------------------------
         os.makedirs("static/audio", exist_ok=True)
 
@@ -114,14 +117,11 @@ def solve_drawing():
 
         audio_url = f"http://127.0.0.1:5000/static/audio/{filename}"
 
-        # ------------------------------
-        # RETURN RESPONSE
-        # ------------------------------
         return jsonify({
             "result": clean_answer,
             "audio": audio_url
         })
 
     except Exception as e:
-        print("Error:", e)
+        print("🔥 ERROR:", str(e))
         return jsonify({"result": "Error solving drawing"}), 500

@@ -1,45 +1,43 @@
 from flask import Blueprint, request, jsonify
 from dotenv import load_dotenv
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_core.messages import HumanMessage, SystemMessage
+import google.generativeai as genai
+import os
 import json
 import re
 
 # -----------------------------
-# Load ENV
+# LOAD ENV
 # -----------------------------
 load_dotenv()
 
+genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+
 # -----------------------------
-# Initialize Gemini via LangChain
+# GEMINI MODEL
 # -----------------------------
-llm = ChatGoogleGenerativeAI(
-    model="gemini-2.5-flash",
-    temperature=0.3
-)
+model = genai.GenerativeModel("gemini-2.5-flash")
 
 flashcards_bp = Blueprint("flashcards", __name__)
 
-
 # -----------------------------
-# Flashcard Generation Logic
+# FLASHCARD GENERATION
 # -----------------------------
 def generate_flashcards(text):
 
     prompt = f"""
 You are an expert educational assistant.
 
-From the following lecture notes, create concise and informative flashcards.
+Create concise flashcards from lecture notes.
 
 Rules:
-- Each flashcard must contain:
-    - One clear standalone Question
-    - One short precise Answer
-- Avoid repetition
-- Avoid long explanations
-- No extra commentary
+- Each flashcard must have:
+  - Question
+  - Short Answer
+- No explanations
+- No extra text
 
-Return ONLY valid JSON in this format:
+Return ONLY valid JSON:
+
 [
   {{"Question": "What is ...?", "Answer": "..."}}
 ]
@@ -49,27 +47,25 @@ Lecture Notes:
 """
 
     try:
-        response = llm.invoke([
-            SystemMessage(content="You generate structured educational flashcards."),
-            HumanMessage(content=prompt)
-        ])
+        response = model.generate_content(prompt)
+        raw_output = response.text.strip()
 
-        raw_output = response.content.strip()
+        print("🔥 RAW OUTPUT:\n", raw_output)
 
-        # Remove markdown code blocks if present
+        # Remove markdown formatting if present
         raw_output = re.sub(r"```json", "", raw_output)
         raw_output = re.sub(r"```", "", raw_output).strip()
 
-        # Extract JSON array safely
+        # Extract JSON safely
         match = re.search(r"\[.*\]", raw_output, re.DOTALL)
 
         if match:
             try:
-                flashcards_json = json.loads(match.group())
-                return flashcards_json
-            except Exception:
+                return json.loads(match.group())
+            except Exception as e:
                 return {
                     "error": "JSON parsing failed",
+                    "details": str(e),
                     "raw": raw_output
                 }
 
@@ -80,13 +76,12 @@ Lecture Notes:
 
     except Exception as e:
         return {
-            "error": "LLM request failed",
+            "error": "Gemini request failed",
             "details": str(e)
         }
 
-
 # -----------------------------
-# API Endpoint
+# API ENDPOINT
 # -----------------------------
 @flashcards_bp.route("/flashcards/generate", methods=["POST"])
 def flashcards_api():
