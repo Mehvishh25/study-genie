@@ -4,20 +4,14 @@ import time
 import os
 import google.generativeai as genai
 
-# Load ENV
 load_dotenv()
 
-# Configure Gemini
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 
-# Initialize model
 model = genai.GenerativeModel("gemini-2.5-flash")
 
 worksheet_bp = Blueprint("worksheet", __name__)
 
-# -----------------------------
-# Worksheet Logic
-# -----------------------------
 def generate_worksheet(
     grade,
     subject,
@@ -57,19 +51,16 @@ Return worksheet in clean numbered format.
     try:
         response = model.generate_content(prompt)
 
-        # 🔥 Important for free tier
         time.sleep(10)
 
         return response.text
 
     except Exception as e:
         print("ERROR:", str(e))
-        return "⚠️ Rate limit hit. Please wait 30–60 seconds and try again."
+        return "Rate limit hit. Please wait 30–60 seconds and try again."
 
 
-# -----------------------------
-# API Endpoint
-# -----------------------------
+
 @worksheet_bp.route("/worksheet/generate", methods=["POST"])
 def worksheet_api():
     try:
