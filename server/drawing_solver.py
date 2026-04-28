@@ -11,9 +11,6 @@ from gtts import gTTS
 import google.generativeai as genai
 from dotenv import load_dotenv
 
-# ------------------------------
-# INIT
-# ------------------------------
 load_dotenv()
 
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
@@ -22,9 +19,6 @@ model = genai.GenerativeModel("gemini-2.5-flash")
 
 drawing_solver_bp = Blueprint("drawing_solver", __name__)
 
-# ------------------------------
-# PROMPT
-# ------------------------------
 PROMPT_TEMPLATE = """
 You are an AI tutor that understands handwritten drawings.
 
@@ -39,9 +33,6 @@ Return plain text only.
 No markdown, no symbols, no formatting.
 """
 
-# ------------------------------
-# ROUTE
-# ------------------------------
 @drawing_solver_bp.route("/solve-drawing", methods=["POST"])
 def solve_drawing():
 
@@ -52,31 +43,19 @@ def solve_drawing():
         file = request.files["image"]
         user_text = request.form.get("text", "")
 
-        # ------------------------------
-        # Load image
-        # ------------------------------
         image = Image.open(io.BytesIO(file.read())).convert("RGB")
 
         if image.width > 800:
             ratio = 800 / image.width
             image = image.resize((800, int(image.height * ratio)))
 
-        # ------------------------------
-        # Convert to base64
-        # ------------------------------
         buffer = io.BytesIO()
         image.save(buffer, format="PNG")
 
         img_base64 = base64.b64encode(buffer.getvalue()).decode()
 
-        # ------------------------------
-        # Build prompt
-        # ------------------------------
         full_prompt = PROMPT_TEMPLATE + f"\nUser Text: {user_text}"
 
-        # ------------------------------
-        # Gemini request (DIRECT)
-        # ------------------------------
         response = model.generate_content([
             {
                 "role": "user",
@@ -97,16 +76,10 @@ def solve_drawing():
 
         answer = response.text
 
-        # ------------------------------
-        # Clean output
-        # ------------------------------
         clean_answer = re.sub(r"[*#_`>-]", "", answer)
         clean_answer = re.sub(r"\n+", "\n", clean_answer).strip()
         clean_answer = clean_answer.replace(":", ".")
 
-        # ------------------------------
-        # TTS AUDIO
-        # ------------------------------
         os.makedirs("static/audio", exist_ok=True)
 
         filename = f"{uuid.uuid4()}.mp3"
@@ -123,5 +96,5 @@ def solve_drawing():
         })
 
     except Exception as e:
-        print("🔥 ERROR:", str(e))
+        print("ERROR:", str(e))
         return jsonify({"result": "Error solving drawing"}), 500
