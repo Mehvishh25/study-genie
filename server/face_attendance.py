@@ -9,7 +9,6 @@ from sklearn.neighbors import KNeighborsClassifier
 
 face_bp = Blueprint("face", __name__, url_prefix="/face")
 
-# ---------------- Configuration ---------------- #
 nimgs = 20
 datetoday = date.today().strftime("%m_%d_%y")
 
@@ -23,8 +22,6 @@ attendance_file = f"Attendance/Attendance-{datetoday}.csv"
 if not os.path.exists(attendance_file):
     with open(attendance_file, "w") as f:
         f.write("Name,Roll,Time\n")
-
-# ---------------- Helper Functions ---------------- #
 
 def extract_faces(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -68,9 +65,6 @@ def add_attendance(name):
     return False
 
 
-# =========================
-# REGISTER USER
-# =========================
 
 @face_bp.route("/register", methods=["POST"])
 def register_user():
@@ -115,10 +109,6 @@ def register_user():
     return jsonify({"message": "User registered & attendance marked"})
 
 
-# =========================
-# MARK ATTENDANCE
-# =========================
-
 @face_bp.route("/mark", methods=["POST"])
 def mark_attendance():
 
@@ -161,10 +151,6 @@ def mark_attendance():
     return jsonify({"message": "Face not detected"})
 
 
-# =========================
-# 🆕 GET ALL DATES (Latest → Oldest)
-# =========================
-
 @face_bp.route("/dates", methods=["GET"])
 def get_attendance_dates():
     files = os.listdir("Attendance")
@@ -183,10 +169,6 @@ def get_attendance_dates():
 
     return jsonify({"dates": dates})
 
-
-# =========================
-# 📄 GET ATTENDANCE BY DATE
-# =========================
 
 @face_bp.route("/attendance/<date>", methods=["GET"])
 def get_attendance_by_date(date):
