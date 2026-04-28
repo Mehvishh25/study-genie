@@ -5,9 +5,6 @@ import os
 import json
 import re
 
-# -----------------------------
-# ENV + Gemini setup
-# -----------------------------
 load_dotenv()
 
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
@@ -16,9 +13,6 @@ model = genai.GenerativeModel("gemini-2.5-flash")
 
 quiz_bp = Blueprint("quiz", __name__)
 
-# -----------------------------
-# QUIZ GENERATOR
-# -----------------------------
 def generate_mcq_quiz(grade, subject, topic, difficulty, num_questions, text_input=""):
 
     reference_section = ""
@@ -66,12 +60,10 @@ Return ONLY JSON:
 
         raw_output = response.text.strip()
 
-        print("🔥 RAW OUTPUT:", raw_output)  # debug
+        print("RAW OUTPUT:", raw_output)
 
-        # remove markdown
         raw_output = re.sub(r"```json|```", "", raw_output).strip()
 
-        # extract JSON array
         match = re.search(r"\[.*\]", raw_output, re.DOTALL)
 
         if match:
@@ -83,12 +75,9 @@ Return ONLY JSON:
         }
 
     except Exception as e:
-        print("🔥 GEMINI ERROR:", str(e))
+        print("GEMINI ERROR:", str(e))
         return {"error": str(e)}
 
-# -----------------------------
-# API ROUTE
-# -----------------------------
 @quiz_bp.route("/quiz/generate", methods=["POST"])
 def quiz_api():
 
